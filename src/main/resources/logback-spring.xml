@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <!-- Console appender for local development -->
+    <springProfile name="!docker">
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{taskId}] [%X{workerId}] %-5level %logger{36} - %msg%n</pattern>
+            </encoder>
+        </appender>
+
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
+
+    <!-- Structured JSON logging for production / Docker -->
+    <springProfile name="docker">
+        <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+                <includeMdcKeyName>taskId</includeMdcKeyName>
+                <includeMdcKeyName>workerId</includeMdcKeyName>
+                <timeZone>UTC</timeZone>
+                <fieldNames>
+                    <timestamp>timestamp</timestamp>
+                    <thread>thread</thread>
+                    <level>level</level>
+                    <logger>logger</logger>
+                    <message>message</message>
+                    <stackTrace>stack_trace</stackTrace>
+                </fieldNames>
+            </encoder>
+        </appender>
+
+        <root level="INFO">
+            <appender-ref ref="JSON_CONSOLE"/>
+        </root>
+    </springProfile>
+
+    <!-- Logger levels -->
+    <logger name="com.taskscheduler" level="INFO"/>
+    <logger name="org.springframework" level="WARN"/>
+    <logger name="org.hibernate" level="WARN"/>
+    <logger name="org.flywaydb" level="INFO"/>
+</configuration>

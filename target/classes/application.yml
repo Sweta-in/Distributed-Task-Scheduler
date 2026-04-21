@@ -1,0 +1,74 @@
+server:
+  port: 8080
+  shutdown: graceful
+
+spring:
+  application:
+    name: distributed-task-scheduler
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:taskscheduler}
+    username: ${DB_USERNAME:taskuser}
+    password: ${DB_PASSWORD:taskpass}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      minimum-idle: 2
+      maximum-pool-size: 10
+      idle-timeout: 30000
+      pool-name: TaskSchedulerHikariPool
+      max-lifetime: 1800000
+      connection-timeout: 20000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 5000ms
+      lettuce:
+        pool:
+          min-idle: 2
+          max-idle: 8
+          max-active: 16
+
+  task:
+    execution:
+      pool:
+        core-size: 5
+        max-size: 10
+        queue-capacity: 25
+      thread-name-prefix: worker-
+
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus,info
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+logging:
+  level:
+    com.taskscheduler: INFO
+    org.springframework: WARN
+    org.hibernate.SQL: WARN

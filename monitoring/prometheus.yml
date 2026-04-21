@@ -1,0 +1,28 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # ── Application metrics (Micrometer/Prometheus) ─────────────
+  - job_name: "task-scheduler"
+    metrics_path: "/actuator/prometheus"
+    scrape_interval: 10s
+    # When scaling app with docker-compose --scale app=3,
+    # use DNS service discovery to find all instances
+    dns_sd_configs:
+      - names:
+          - "app"
+        type: A
+        port: 8080
+    # Fallback static config for single instance
+    static_configs:
+      - targets:
+          - "app:8080"
+        labels:
+          application: "distributed-task-scheduler"
+
+  # ── Prometheus self-monitoring ──────────────────────────────
+  - job_name: "prometheus"
+    static_configs:
+      - targets:
+          - "localhost:9090"

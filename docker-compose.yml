@@ -1,0 +1,107 @@
+services:
+  # ── PostgreSQL ──────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: taskscheduler-postgres
+    environment:
+      POSTGRES_DB: taskscheduler
+      POSTGRES_USER: taskuser
+      POSTGRES_PASSWORD: taskpass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U taskuser -d taskscheduler"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tasknet
+
+  # ── Redis ───────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: taskscheduler-redis
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tasknet
+
+  # ── Application (scale with --scale app=3) ──────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: taskscheduler
+      DB_USERNAME: taskuser
+      DB_PASSWORD: taskpass
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ""
+    ports:
+      - "8080-8082:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - tasknet
+
+  # ── Prometheus ──────────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    container_name: taskscheduler-prometheus
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=15d"
+    depends_on:
+      - app
+    networks:
+      - tasknet
+
+  # ── Grafana ─────────────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: taskscheduler-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - tasknet
+
+volumes:
+  postgres_data:
+  redis_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  tasknet:
+    driver: bridge
