@@ -561,18 +561,6 @@ distributed-task-scheduler/
 
 ---
 
-## Resume Bullet Points
-
-This project demonstrates end-to-end distributed systems design: priority queue semantics, concurrent worker coordination, fault-tolerant state management, and production observability — all within a clean Spring Boot architecture ready for horizontal scaling.
-
-- **Designed and implemented a distributed task scheduling system using Spring Boot, Redis sorted sets, and PostgreSQL, supporting priority-based scheduling and atomic exactly-once execution across N stateless worker nodes deployable via Docker Compose.**
-
-- **Engineered a fault-tolerant worker execution engine with heartbeat-based dead task reclamation, configurable per-task exponential backoff retry policies, and a Flyway-managed schema — eliminating task loss on worker crash.**
-
-- **Built end-to-end observability using Micrometer, Prometheus, and Grafana (queue depth, worker throughput, failure rate) with a full Testcontainers integration test suite validating state transitions against real Redis and PostgreSQL instances.**
-
----
-
 ## License
 
 ```
